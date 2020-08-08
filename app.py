@@ -1,5 +1,7 @@
 import time
+import atexit
 import threading
+import RPi.GPIO as GPIO
 from flask import Flask, jsonify, request
 
 app = Flask(__name__, instance_relative_config=True)
@@ -12,6 +14,12 @@ app.config.from_pyfile('local_config.py')
 is_switch_relay_running = False
 lock = threading.Lock()
 
+# Initialize GPIO
+GPIO.setmode(GPIO.BCM)
+_RELAY_INPUT_PINS = app.config['RELAY_INPUT_PINS']
+for pin in _RELAY_INPUT_PINS:
+    GPIO.setup(pin, GPIO.OUT)
+
 def switch_relays(time_ms):
     global is_switch_relay_running
     # Bail if another thread is running
@@ -19,9 +27,17 @@ def switch_relays(time_ms):
     with lock:
         is_switch_relay_running = True
 
+    print(_RELAY_INPUT_PINS)
+    for pin in _RELAY_INPUT_PINS:
+        GPIO.output(pin, GPIO.HIGH)
+
     print('Relay closed')
+    
     # Convert milliseconds to seconds for sleep method
     time.sleep(time_ms / 1000)
+    
+    for pin in _RELAY_INPUT_PINS:
+        GPIO.output(pin, GPIO.LOW)
     print('Relay open')
 
     with lock:
@@ -42,6 +58,13 @@ def shock_api():
     time = request.args.get('time', default=1000, type=int)
     threading.Thread(target=switch_relays, args=(time,)).start()
     return jsonify(message='Success!'), 200
+
+def exit_handler():
+    for pin in _RELAY_INPUT_PINS:
+        GPIO.output(pin, GPIO.LOW)
+    GPIO.cleanup()
+
+atexit.register(exit_handler)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
