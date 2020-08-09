@@ -2,7 +2,7 @@ import time
 import atexit
 import threading
 import RPi.GPIO as GPIO
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__, instance_relative_config=True)
 # Load configs
@@ -15,6 +15,7 @@ is_switch_relay_running = False
 lock = threading.Lock()
 
 # Initialize GPIO
+GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 _RELAY_INPUT_PINS = app.config['RELAY_INPUT_PINS']
 for pin in _RELAY_INPUT_PINS:
@@ -27,7 +28,6 @@ def switch_relays(time_ms):
     with lock:
         is_switch_relay_running = True
 
-    print(_RELAY_INPUT_PINS)
     for pin in _RELAY_INPUT_PINS:
         GPIO.output(pin, GPIO.HIGH)
 
@@ -43,7 +43,6 @@ def switch_relays(time_ms):
     with lock:
         is_switch_relay_running = False
 
-
 @app.route('/api/shock')
 def shock_api():
     '''
@@ -58,6 +57,10 @@ def shock_api():
     time = request.args.get('time', default=1000, type=int)
     threading.Thread(target=switch_relays, args=(time,)).start()
     return jsonify(message='Success!'), 200
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 def exit_handler():
     for pin in _RELAY_INPUT_PINS:

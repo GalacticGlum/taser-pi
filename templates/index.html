@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>shock me</title>
+	</head>
+	<body>
+		<div style="text-align: center;">
+			<h1 style="font-size: 100px;margin-bottom: 20px;">do it</h1>
+			<button type="button" id="shock-btn"
+				style="width: 500px;height: 200px;font-size: 50px;font-family: "Comic Sans MS", "Comic Sans", cursive;"
+			>
+				SHOCK ME
+			</button>
+			</form>
+		</div>
+	<script>
+		document.getElementById('shock-btn').addEventListener('click', function() {
+			fetch('{{ url_for('shock_api') }}');
+		});
+	</script>
+	</body>
+</html> 
+
